@@ -112,9 +112,10 @@ Download annotation data to map probe set to gene
 ```{r bioc, eval=FALSE}
 ## try http:// if https:// URLs are not supported
 source("https://bioconductor.org/biocLite.R")
-biocLite("affy")
-biocLite("hgu133plus2.db")
-biocLite("drosophila2.db")
+biocLite("affyPLM")
+#biocLite("affy")
+#biocLite("hgu133plus2.db")
+#biocLite("drosophila2.db")
 ```
 
 ```{r loadLibraries, message=FALSE, warning=FALSE, eval=FALSE}
@@ -151,7 +152,8 @@ expr.rma <- exprs(data.rma) # format as table
 
 ```{r, eval = FALSE}
 library(affyPLM) #compare normalized data with raw data
-MAplot(data.rma, pairs = TRUE, which=c(1,2,3,4), plot.method = "smoothScatter")
+dim(data.rma)
+MAplot(data.rma, pairs = TRUE, which=c(1,2,3,4), plot.method = "smoothScatter") # can change which to include which samples you want to use
 boxplot(data.frame(expr.rma), col=c(1:4))
 ```
 
@@ -164,9 +166,11 @@ head(rownames(expr.rma), 20)
 
 ```{r, eval = FALSE}
 # Convert gene names
-Annot <- data.frame(REFSEQ=sapply(contents(drosophila2REFSEQ), paste, collapse=", "),
+Annot <- data.frame(REFSEQ=sapply(names(contents(drosophila2REFSEQ)), paste, collapse=", "),
                     SYMBOL=sapply(contents(drosophila2SYMBOL), paste, collapse=", "),
-                    DESC = sapply(contents(drosophila2GENENAME), paste, collapse=", ")  )
+                    DESC = sapply(contents(drosophila2GENENAME), paste, collapse=", "))
+
+head(Annot)
 
 # Merge data frames together (like a database table join)
 all <- merge(Annot, expr.rma, by.x=0, by.y=0, all = TRUE)
@@ -196,9 +200,11 @@ genes.down <- all$SYMBOL[ which( T.p.value < 0.05 & foldchange < 0 ) ] #... down
 Alternatively, use a modelling approach:
 ```{r, eval = FALSE}
 # Use limma to call differentially expressed genes
-library(limma)
+library("limma")
 design <- c(0, 0, 1, 1) # assign control and trt groups
 design.mat <- model.matrix(~design) 
+dim(design.mat)
+dim(expr.rma)
 fit <- lmFit(expr.rma, design.mat)
 fit <- eBayes(fit)
 topTable(fit, coef = "design",number=15) 
@@ -206,16 +212,18 @@ topTable(fit, coef = "design",number=15)
 
 ---
 
-Two-factor design:
+Two-factor design: (FYI: don't have more than 2 levels in the data, so you cannot actually run this)
 ```{r, eval = FALSE}
-design = c("WT.U", "WT.S", "Mu.U", "Mu.S","Mu.S")
+design = c("WT.U", "WT.S", "Mu.U", "Mu.S")
 design <- factor(design, levels = c("WT.U", "WT.S", "Mu.U", "Mu.S")) 
 design.mat <- model.matrix(~0 + design)
 colnames(design.mat) <- levels(design)
+dim(design.mat)
+dim(expr.rma)
 fit <- lmFit(expr.rma, design.mat)
 cont.matrix <- makeContrasts(WT.SvsU = WT.S - WT.U,
                              Mu.SvsU = Mu.S - Mu.U,
-                             Diff = (Mu.S - Mu.U) - (WT.S - WT.U), 
+                             # Diff = (Mu.S - Mu.U) - (WT.S - WT.U),
                              levels = design.mat)
 fit2 <- contrasts.fit(fit, cont.matrix) 
 fit2 <- eBayes(fit2)
