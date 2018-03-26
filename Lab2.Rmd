@@ -197,7 +197,7 @@ genes.down <- all$SYMBOL[ which( T.p.value < 0.05 & foldchange < 0 ) ] #... down
 
 ---
 
-Alternatively, use a modelling approach:
+Alternatively, use a modeling approach:
 ```{r, eval = FALSE}
 # Use limma to call differentially expressed genes
 library("limma")
